@@ -1,0 +1,115 @@
+---
+- name: Add vim repo
+  apt_repository: repo='ppa:fcwu-tw/ppa'
+  sudo: yes
+
+- name: Update apt
+  apt: update_cache=yes
+  sudo: yes
+
+- apt: name={{ item }}
+  sudo: yes
+  with_items:
+    - make
+    - binutils
+    - gcc
+    - build-essential
+    - vim
+    - bison
+    - git
+    - curl
+    - ruby-dev
+    - ntp
+    - redis-server
+
+- name: Installing FPM
+  gem: name=fpm user_install=no
+  sudo: yes
+
+- name: Checking for go
+  stat: path=/opt/go
+  register: go_installed
+  sudo: yes
+  ignore_errors: True
+
+- name: Download compiled go
+  get_url: url="https://storage.googleapis.com/golang/go{{ go_version }}.linux-amd64.tar.gz" dest="/tmp/go.tar.gz"
+  sudo: yes
+  when: go_installed.stat.exists == False
+
+- name: Unzip go
+  unarchive: src=/tmp/go.tar.gz dest=/opt/ copy=no
+  sudo: yes
+  when: go_installed.stat.exists == False
+
+- name: Create .bash
+  file: dest=/home/vagrant/.bashrcs state=directory owner=vagrant group=vagrant
+
+- name: Create log dir
+  file: dest=/home/vagrant/workspace/log/content-gateway-api state=directory owner=vagrant group=vagrant
+  sudo: yes
+
+- name: Setup Go environment
+  copy: src=bash_go dest=/home/vagrant/.bashrcs/00_go owner=vagrant group=vagrant
+
+- name: Setup dev environment
+  copy: src=bash_dev dest=/home/vagrant/.bashrcs/01_dev owner=vagrant group=vagrant
+
+- name: Make bashrc appendable
+  lineinfile: dest=/home/vagrant/.bashrc line='for f in ~/.bashrcs/*; do source $f; done'
+
+- name: Remove old pathvars
+  lineinfile: dest=/home/vagrant/.bashrc regexp='GO*' state=absent
+
+- name: Enable GOPATH for vagrant user
+  file: path=/home/vagrant/{{ item }} owner=vagrant group=vagrant
+  sudo: yes
+  with_items:
+    - workspace
+    - workspace/src
+    - workspace/src/stash.abc-dev.net.au
+    - workspace/src/stash.abc-dev.net.au/cga
+
+- name: Install GVT
+  become: yes
+  become_user: "{{ godev_owner }}"
+  command: go get -u github.com/FiloSottile/gvt
+  args:
+    creates: "{{ godev_workspace }}/src/github.com/FiloSottile/gvt"
+  environment:
+    GOROOT: /opt/go
+    GOPATH: /home/vagrant/workspace
+    PATH: "$PATH:/opt/go/bin:/usr/bin"
+
+- name: Install counterfeiter
+  become: yes
+  become_user: "{{ godev_owner }}"
+  command: go get -u github.com/maxbrunsfeld/counterfeiter
+  args:
+    creates: "{{ godev_workspace }}/src/github.com/maxbrunsfeld/counterfeiter"
+  environment:
+    GOROOT: /opt/go
+    GOPATH: /home/vagrant/workspace
+    PATH: "$PATH:/opt/go/bin:/usr/bin"
+
+- name: Install ginko
+  become: yes
+  become_user: "{{ godev_owner }}"
+  command: go get -u github.com/onsi/ginkgo/ginkgo
+  args:
+    creates: "{{ godev_workspace }}/src/github.com/onsi/ginkgo/ginkgo"
+  environment:
+    GOROOT: /opt/go
+    GOPATH: "{{ godev_workspace }}"
+    PATH: "$PATH:/opt/go/bin:/usr/bin"
+
+- name: Install gomega
+  become: yes
+  become_user: "{{ godev_owner }}"
+  command: go get -u github.com/onsi/gomega
+  args:
+    creates: "{{ godev_workspace }}/src/github.com/onsi/gomega"
+  environment:
+    GOROOT: /opt/go
+    GOPATH: "{{ godev_workspace }}"
+    PATH: "$PATH:/opt/go/bin:/usr/bin"

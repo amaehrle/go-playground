@@ -46,7 +46,7 @@
   file: dest=/home/vagrant/.bashrcs state=directory owner=vagrant group=vagrant
 
 - name: Create log dir
-  file: dest=/home/vagrant/workspace/log/content-gateway-api state=directory owner=vagrant group=vagrant
+  file: dest=/home/vagrant/workspace/log/go_playground state=directory owner=vagrant group=vagrant
   sudo: yes
 
 - name: Setup Go environment
@@ -67,8 +67,8 @@
   with_items:
     - workspace
     - workspace/src
-    - workspace/src/stash.abc-dev.net.au
-    - workspace/src/stash.abc-dev.net.au/cga
+    - workspace/src/github.com/
+    - "{{godev_home_dir}}"
 
 - name: Install GVT
   become: yes

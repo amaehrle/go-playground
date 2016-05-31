@@ -15,7 +15,7 @@ Vagrant.configure(2) do |config|
     api_box.vm.network 'forwarded_port', guest: 3000, host: 3000, auto_correct: true
     api_box.vm.network 'forwarded_port', guest: 6379, host: 6379, auto_correct: true
 
-    api_box.vm.synced_folder '.', '/home/vagrant/workspace/src/'
+    api_box.vm.synced_folder '.', '/home/vagrant/workspace/src/github.com/amaehrle/go-playground'
 
     api_box.vm.provision 'ansible' do |ansible|
       ansible.playbook = 'ansible/go_playground.yml'

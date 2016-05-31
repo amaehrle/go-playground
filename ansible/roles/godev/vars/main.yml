@@ -1,2 +1,6 @@
 ---
 go_version: 1.6
+godev_owner: "vagrant"
+godev_group: "{{ godev_owner }}"
+godev_workspace: "/home/{{ godev_owner }}/workspace"
+godev_home_dir: github.com/amaehrle/go-playground

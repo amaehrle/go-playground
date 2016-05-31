@@ -1,2 +1,2 @@
 export EDITOR=vim
-export CGA=/home/vagrant/workspace/src/stash.abc-dev.net.au/cga/content-gateway-api
+export PLAY=/home/vagrant/workspace/src/{{go_home_dir}}

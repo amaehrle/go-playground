@@ -68,7 +68,8 @@
     - workspace
     - workspace/src
     - workspace/src/github.com/
-    - "{{godev_home_dir}}"
+    - workspace/src/github.com/amaehrle
+    - "workspace/src/{{godev_home_dir}}"
 
 - name: Install GVT
   become: yes

@@ -10,6 +10,7 @@ Vagrant.configure(2) do |config|
   end
 
   config.vm.network 'forwarded_port', guest: 8000, host: 8000, auto_correct: true
+  config.vm.network 'forwarded_port', guest: 8888, host: 8888, auto_correct: true
 
   config.vm.synced_folder '.', '/home/vagrant/workspace/src/github.com/amaehrle/go-playground'
 

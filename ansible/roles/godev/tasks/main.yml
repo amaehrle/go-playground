@@ -1,69 +1,60 @@
 ---
-- name: Add vim repo
-  apt_repository: repo='ppa:fcwu-tw/ppa'
-  sudo: yes
-
 - name: Update apt
   apt: update_cache=yes
-  sudo: yes
+  become: yes
 
-- apt: name={{ item }}
-  sudo: yes
+- name: install a few dev tools and other packages
+  apt: name={{ item }}
+  become: yes
   with_items:
     - make
     - binutils
     - gcc
     - build-essential
     - vim
-    - bison
     - git
     - curl
-    - ruby-dev
-    - ntp
-    - redis-server
-
-- name: Installing FPM
-  gem: name=fpm user_install=no
-  sudo: yes
+    - ntp # Network Time Protocol
+    - unzip
+    - tar
 
 - name: Checking for go
   stat: path=/opt/go
   register: go_installed
-  sudo: yes
   ignore_errors: True
 
 - name: Download compiled go
   get_url: url="https://storage.googleapis.com/golang/go{{ go_version }}.linux-amd64.tar.gz" dest="/tmp/go.tar.gz"
-  sudo: yes
   when: go_installed.stat.exists == False
 
 - name: Unzip go
-  unarchive: src=/tmp/go.tar.gz dest=/opt/ copy=no
-  sudo: yes
+  unarchive: src="/tmp/go.tar.gz" dest=/opt/ copy=no
+  become: yes
   when: go_installed.stat.exists == False
 
-- name: Create .bash
-  file: dest=/home/vagrant/.bashrcs state=directory owner=vagrant group=vagrant
+
+- name: Create .bashrcs directory
+  file: dest="{{ home_dir }}/.bashrcs" state=directory
 
 - name: Create log dir
-  file: dest=/home/vagrant/workspace/log/go_playground state=directory owner=vagrant group=vagrant
-  sudo: yes
+  become: yes
+  file: dest="{{ home_dir }}/workspace/log/go_playground" state=directory
 
 - name: Setup Go environment
-  copy: src=bash_go dest=/home/vagrant/.bashrcs/00_go owner=vagrant group=vagrant
+  copy: src=bash_go dest="{{ home_dir }}/.bashrcs/00_go"
 
 - name: Setup dev environment
-  copy: src=bash_dev dest=/home/vagrant/.bashrcs/01_dev owner=vagrant group=vagrant
+  copy: src=bash_dev dest="{{ home_dir }}/.bashrcs/01_dev"
 
 - name: Make bashrc appendable
-  lineinfile: dest=/home/vagrant/.bashrc line='for f in ~/.bashrcs/*; do source $f; done'
+  lineinfile: dest="{{ home_dir }}/.bashrc" line='for f in ~/.bashrcs/*; do source $f; done'
 
 - name: Remove old pathvars
-  lineinfile: dest=/home/vagrant/.bashrc regexp='GO*' state=absent
+  lineinfile: dest="{{ home_dir }}/.bashrc" regexp='GO*' state=absent
 
 - name: Enable GOPATH for vagrant user
-  file: path=/home/vagrant/{{ item }} owner=vagrant group=vagrant
-  sudo: yes
+  file: path="{{ home_dir }}/{{ item }}" owner=vagrant group=vagrant
+  become: yes
   with_items:
     - workspace
     - workspace/src
@@ -71,31 +62,25 @@
     - workspace/src/github.com/amaehrle
     - "workspace/src/{{godev_home_dir}}"
 
-- name: Install GVT
-  become: yes
-  become_user: "{{ godev_owner }}"
+- name: Install GVT (optional)
   command: go get -u github.com/FiloSottile/gvt
   args:
     creates: "{{ godev_workspace }}/src/github.com/FiloSottile/gvt"
   environment:
     GOROOT: /opt/go
-    GOPATH: /home/vagrant/workspace
+    GOPATH: "{{ home_dir }}/workspace"
     PATH: "$PATH:/opt/go/bin:/usr/bin"
 
-- name: Install counterfeiter
-  become: yes
-  become_user: "{{ godev_owner }}"
+- name: Install counterfeiter (optional)
   command: go get -u github.com/maxbrunsfeld/counterfeiter
   args:
     creates: "{{ godev_workspace }}/src/github.com/maxbrunsfeld/counterfeiter"
   environment:
     GOROOT: /opt/go
-    GOPATH: /home/vagrant/workspace
+    GOPATH: "{{ home_dir }}/workspace"
     PATH: "$PATH:/opt/go/bin:/usr/bin"
 
-- name: Install ginko
-  become: yes
-  become_user: "{{ godev_owner }}"
+- name: Install ginko (optional)
   command: go get -u github.com/onsi/ginkgo/ginkgo
   args:
     creates: "{{ godev_workspace }}/src/github.com/onsi/ginkgo/ginkgo"
@@ -104,9 +89,7 @@
     GOPATH: "{{ godev_workspace }}"
     PATH: "$PATH:/opt/go/bin:/usr/bin"
 
-- name: Install gomega
-  become: yes
-  become_user: "{{ godev_owner }}"
+- name: Install gomega (optional)
   command: go get -u github.com/onsi/gomega
   args:
     creates: "{{ godev_workspace }}/src/github.com/onsi/gomega"

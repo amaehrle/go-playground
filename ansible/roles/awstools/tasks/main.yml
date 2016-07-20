@@ -1,0 +1,75 @@
+---
+- name: Checking for aws exists
+  stat: path="/usr/local/bin/aws"
+  register: aws_installed
+  ignore_errors: True
+
+- name: Download aws console tool
+  get_url: url=https://s3.amazonaws.com/aws-cli/awscli-bundle.zip dest="{{ aws_tmp }}"
+  when: aws_installed.stat.exists == False
+
+- name: Unarchive aws console tool
+  unarchive:
+    copy=no
+    src={{ aws_tmp }}
+    dest=/tmp
+  when: aws_installed.stat.exists == False
+
+- name: install aws tools
+  command: "/tmp/awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws"
+  become: yes
+  when: aws_installed.stat.exists == False
+
+- name: install redis cache localy
+  apt: name=redis-server
+  become: yes
+
+- name: Checking for dynamodb exists
+  stat: path="{{dynamodb_install_dir}}/DynamoDBLocal.jar"
+  register: dynamodb_installed
+  ignore_errors: True
+
+- name: Download local DynamoDb
+  get_url: url=http://dynamodb-local.s3-website-us-west-2.amazonaws.com/dynamodb_local_latest.tar.gz dest="{{ dynamodb_tmp }}"
+  when: dynamodb_installed.stat.exists == False
+
+- name: Ensure installation directory exists
+  become: yes
+  file:
+    state=directory
+    mode=0755
+    dest={{ dynamodb_install_dir }}
+  when: dynamodb_installed.stat.exists == False
+
+- name: Unarchive dynamodb
+  unarchive:
+    copy=no
+    src={{ dynamodb_tmp }}
+    dest={{ dynamodb_install_dir }}
+  become: yes
+  when: dynamodb_installed.stat.exists == False
+
+- name: Copy dynamodb start up script
+  copy: src=dynamodbService.sh dest=/home/vagrant/.dynamodbService.sh mode=755
+
+- name: start up dynamodb
+  command: /home/vagrant/.dynamodbService.sh start
+
+- name: Create .aws directory
+  file: dest=/home/vagrant/.aws state=directory
+
+- name: Setup aws config file
+  copy: src=aws.config dest=/home/vagrant/.aws/config
+
+- name: Setup aws config file
+  copy: src=aws.credentials dest=/home/vagrant/.aws/credentials
+
+- name: create dynamoDb table
+  command: "aws dynamodb create-table \
+          --table-name dev-table \
+          --attribute-definitions \
+              AttributeName=id,AttributeType=N \
+          --key-schema \
+              AttributeName=id,KeyType=HASH \
+          --provisioned-throughput ReadCapacityUnits=1,WriteCapacityUnits=1 \
+          --endpoint-url http://127.0.0.1:8000"

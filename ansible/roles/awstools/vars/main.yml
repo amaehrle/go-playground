@@ -1,0 +1,4 @@
+---
+aws_tmp: /tmp/awscli-bundle.zip
+dynamodb_tmp: /tmp/dynamodb_local_latest.tar.gz
+dynamodb_install_dir: /opt/dynamodb
